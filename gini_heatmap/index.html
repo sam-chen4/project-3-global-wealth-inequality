@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Gini Index Heatmap</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 32px;
+            font-weight: 700;
+            margin-top: 20px;
+            color: #333;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .description {
+            max-width: 800px;
+            text-align: center;
+            font-size: 16px;
+            color: #555;
+            margin: 15px 0;
+            line-height: 1.5;
+        }
+
+        .container {
+            display: flex;
+            align-items: flex-start;
+            margin-top: 20px;
+        }
+
+        .map-container {
+            margin-right: 20px;
+        }
+
+        .map-background {
+            background-color: #87CEEB;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .controls {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        label {
+            font-size: 18px;
+            font-weight: 400;
+            margin-bottom: 10px;
+        }
+
+        input[type="range"] {
+            width: 300px;
+            margin-bottom: 10px;
+        }
+
+        .year-output {
+            font-size: 16px;
+            font-weight: 200;
+            color: #333;
+        }
+
+        .chart-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .line-chart {
+            margin-bottom: 15px;
+        }
+
+        .tooltip {
+            position: absolute;
+            visibility: hidden;
+            background-color: rgb(241, 241, 241);
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 8px;
+            font-size: 14px;
+            box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .axis-label {
+            font-size: 14px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="title">World Gini Index Heatmap</div>
+    <div class="description">
+        The Gini index, or Gini coefficient, is a statistical measure of income inequality within a country. 
+        A Gini index of 0 represents perfect equality, where everyone has the same income, 
+        while a Gini index of 100 indicates perfect inequality, where all income is earned by one person.
+    </div>
+    <div class="container">
+        <div class="map-container">
+            <svg class="map-background" width="960" height="500"></svg>
+        </div>
+        <div class="right-panel">
+            <div class="controls">
+                <label for="yearSelector">Select Year:</label>
+                <input type="range" id="yearSelector" min="2000" max="2020" step="1" value="2000" oninput="document.getElementById('yearOutput').textContent = this.value; updateMap(this.value);">
+                <div class="year-output">Year: <span id="yearOutput">2000</span></div>
+            </div>
+            <div class="chart-container">
+                <svg class="line-chart" id="gini-chart" width="500" height="200"></svg>
+                <svg class="line-chart" id="gdp-chart" width="500" height="300"></svg>
+            </div>
+        </div>
+    </div>
+    <script src="./static/js/heatmap.js"></script>
+ 
+</body>
+</html>

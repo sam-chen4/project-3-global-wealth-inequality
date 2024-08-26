@@ -1,0 +1,1 @@
+# world-gini-index
