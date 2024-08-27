@@ -31,7 +31,7 @@ d3.csv("gini_heatmap/wii_data.csv").then(function(data) {
         let population = yearData.map(d => +d.population);
 
         // Create hover text including the population
-        let hoverText = yearData.map(d => `Country: ${d.country}<br>GDP: ${d.gdp} Billion USD<br>Gini Index: ${d.gini_index}<br>Population: ${d.population}`);
+        let hoverText = yearData.map(d => `Country: ${d.country}<br>GDP: ${d.gdp} USD<br>Gini Index: ${d.gini_index}<br>Population: ${d.population}`);
 
         let trace = {
             x: gdps,
