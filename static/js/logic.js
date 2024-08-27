@@ -51,7 +51,7 @@ d3.csv("gini_heatmap/wii_data.csv").then(function(data) {
         let layout = {
             title: `GDP vs Gini Coefficient ${year}`,
             xaxis: {
-                title: 'GDP (in Billion USD)'
+                title: 'GDP (in Thousands (USD))'
             },
             yaxis: {
                 title: 'Gini Coefficient'
