@@ -1,35 +1,51 @@
-// Load and parse the JSON data
-d3.json("Resources/data.json").then(function(data) {
+// Load and parse the CSV data
+d3.csv("gini_heatmap/wii_data.csv").then(function(data) {
 
-    // Access the columns (properties)
-    let countries = data.map(d => d.country);
-    let gdp_2018 = data.map(d => d.gdp_2018);
-    let gini_2018 = data.map(d => d.gini_std_2018);
-    let gdp_2022 = data.map(d => d.gdp_2022);
-    let gini_2022 = data.map(d => d.gini_std_2022);
+    // Nest the data by year
+    let dataByYear = d3.group(data, d => d.year);
 
+    // Generate the year dropdown options
+    let yearSelect = document.getElementById('yearSelect');
+    dataByYear.forEach((_, year) => {
+        let option = document.createElement('option');
+        option.value = year;
+        option.text = year;
+        yearSelect.appendChild(option);
+    });
+
+    // Function to update the plot based on the selected year
     function updatePlot(year) {
-        let xData, yData;
-        if (year === "2018") {
-            xData = gdp_2018;
-            yData = gini_2018;
-        } else {
-            xData = gdp_2022;
-            yData = gini_2022;
+        if (!year) return;
+
+        let yearData = dataByYear.get(year);
+
+        if (!yearData) {
+            console.error(`No data found for year ${year}`);
+            return;
         }
 
+        // Access the columns (properties) for the selected year
+        let countries = yearData.map(d => d.country);
+        let gdps = yearData.map(d => +d.gdp);
+        let gini = yearData.map(d => +d.gini_index);
+        let population = yearData.map(d => +d.population);
+
+        // Create hover text including the population
+        let hoverText = yearData.map(d => `Country: ${d.country}<br>GDP: ${d.gdp} Billion USD<br>Gini Index: ${d.gini_index}<br>Population: ${d.population}`);
+
         let trace = {
-            x: xData,
-            y: yData,
-            text: countries,
+            x: gdps,
+            y: gini,
+            text: hoverText,
             mode: 'markers',
             marker: {
                 size: 12,
-                color: 'rgba(93, 164, 214, 0.8)',
+                color: "lightblue",
                 line: {
                     width: 2
                 }
-            }
+            },
+            hoverinfo: 'text'
         };
 
         let layout = {
@@ -45,11 +61,14 @@ d3.json("Resources/data.json").then(function(data) {
         Plotly.newPlot('plotDiv', [trace], layout);
     }
 
-    // Initialize plot with 2018 data
-    updatePlot("2018");
+    // Initialize plot with the first available year
+    let initialYear = [...dataByYear.keys()][0];
+    if (initialYear) {
+        updatePlot(initialYear);
+    }
 
     // Update plot when dropdown selection changes
-    document.getElementById('yearSelect').addEventListener('change', function() {
+    yearSelect.addEventListener('change', function() {
         updatePlot(this.value);
     });
 });
