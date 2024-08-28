@@ -4,21 +4,21 @@ Overview:
 
 This project delves into the analysis of income inequality across different countries, examining how it correlates with economic indicators such as GDP and the Human Development Index (HDI). By comparing pre-COVID and post-COVID periods, this project aims to uncover insights into the factors influencing income disparity globally. The primary objectives are to visualize trends in income inequality over time, explore relationships between GDP and income inequality, and compare inequality across various regions.
 
+
 Visualizations:
 
-1.
+![image](https://github.com/user-attachments/assets/5add4a32-2562-4a2e-8b7b-54239a90c49b)
 
 
-2.
 
 
-3.
+![image](https://github.com/user-attachments/assets/66209890-dfb6-4caa-99ab-430c5c2e6a07)
 
 
-4.
 
 
-Instructions (how to interact):
+Interaction:
+https://ndeogratius.github.io/world-gini-index/
 
 
 
