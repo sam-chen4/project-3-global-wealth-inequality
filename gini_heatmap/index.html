@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Gini Index Heatmap</title>
+    <title>Gini Index and GDP Scatter Plot</title>
     <script src="https://d3js.org/d3.v6.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
@@ -75,7 +75,7 @@
         }
 
         input[type="range"] {
-            width: 300px;
+            width: 200px;
             margin-bottom: 10px;
         }
 
@@ -88,12 +88,15 @@
         .chart-container {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            gap: 10px;
+            align-items: right;
+            gap: 5px;
+            margin-top: 5px;
+            margin-right: 5px;
         }
 
-        .line-chart {
-            margin-bottom: 15px;
+        .line-chart, .scatter-plot {
+            width: 620px;
+            height: 200px;
         }
 
         .tooltip {
@@ -114,7 +117,7 @@
     </style>
 </head>
 <body>
-    <div class="title">World Gini Index Heatmap</div>
+    <div class="title">World Gini Index and GDP Scatter Plot</div>
     <div class="description">
         The Gini index, or Gini coefficient, is a statistical measure of income inequality within a country. 
         A Gini index of 0 represents perfect equality, where everyone has the same income, 
@@ -122,21 +125,20 @@
     </div>
     <div class="container">
         <div class="map-container">
-            <svg class="map-background" width="960" height="500"></svg>
+            <svg class="map-background" width="800" height="400"></svg> <!-- Reduced size -->
         </div>
         <div class="right-panel">
             <div class="controls">
                 <label for="yearSelector">Select Year:</label>
-                <input type="range" id="yearSelector" min="2000" max="2020" step="1" value="2000" oninput="document.getElementById('yearOutput').textContent = this.value; updateMap(this.value);">
+                <input type="range" id="yearSelector" min="2000" max="2020" step="1" value="2000" oninput="document.getElementById('yearOutput').textContent = this.value; updateMap(this.value); updateScatterPlot(this.value);">
                 <div class="year-output">Year: <span id="yearOutput">2000</span></div>
             </div>
             <div class="chart-container">
-                <svg class="line-chart" id="gini-chart" width="500" height="200"></svg>
-                <svg class="line-chart" id="gdp-chart" width="500" height="300"></svg>
+                <svg class="line-chart" id="combined-line-chart"></svg> <!-- Combined line chart -->
+                <svg class="scatter-plot" id="scatter-plot"></svg>
             </div>
         </div>
     </div>
     <script src="./static/js/heatmap.js"></script>
- 
 </body>
 </html>
