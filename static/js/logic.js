@@ -13,6 +13,36 @@ d3.csv("gini_heatmap/wii_data.csv").then(function(data) {
         yearSelect.appendChild(option);
     });
 
+    // Function to get color based on year
+    function getColorForYear(year) {
+        const colorMap = {
+            2000: "rgba(0, 0, 255, 0.4)", 
+            2001: "rgba(0, 128, 0, 0.4)", 
+            2002: "rgba(128, 0, 128, 0.4)", 
+            2003: "rgba(0, 0, 255, 0.4)",
+            2004: "rgba(255, 0, 255, 0.4)",  
+            2005: "rgba(165, 42, 42, 0.4)",
+            2006: "rgba(0, 128, 128, 0.4)",
+            2007: "rgba(47, 79, 79, 0.4)",
+            2008: "rgba(165, 42, 42, 0.4)",
+            2009: "rgba(120, 81, 169, 0.6)",
+            2010: "rgba(0, 128, 0, 0.4)",
+            2011: "rgba(255, 0, 255, 0.4)",
+            2012: "rgba(255, 165, 0, 0.4)",
+            2013: "rgba(0, 0, 0, 0.4)",
+            2014: "rgba(255, 0, 0, 0.4)",
+            2015: "rgba(0, 139, 139, 0.4)",
+            2016: "rgba(255, 0, 0, 0.4)",
+            2017: "rgba(154, 205, 50, 0.7)",
+            2018: "rgba(48, 25, 52, 0.4)",
+            2019: "rgba(64, 224, 208, 0.7)",
+            2020: "rgba(0, 139, 139, 0.4)"
+        };
+
+        // Return color for the year or a default color if not defined
+        return colorMap[year] || 'rgba(0, 0, 0, 0.5)'; // Default to black
+    }
+
     // Function to update the plot based on the selected year
     function updatePlot(year) {
         if (!year) return;
@@ -25,40 +55,64 @@ d3.csv("gini_heatmap/wii_data.csv").then(function(data) {
         }
 
         // Access the columns (properties) for the selected year
-        let countries = yearData.map(d => d.country);
-        let gdps = yearData.map(d => +d.gdp);
-        let gini = yearData.map(d => +d.gini_index);
-        let population = yearData.map(d => +d.population);
+        let dataPoints = yearData.map(d => ({
+            x: +d.gdp,
+            y: +d.gini_index,
+            label: d.country
+        }));
 
-        // Create hover text including the population
-        let hoverText = yearData.map(d => `Country: ${d.country}<br>GDP: ${d.gdp} USD<br>Gini Index: ${d.gini_index}<br>Population: ${d.population}`);
+        // Get the color for the selected year
+        let color = getColorForYear(year);
 
-        let trace = {
-            x: gdps,
-            y: gini,
-            text: hoverText,
-            mode: 'markers',
-            marker: {
-                size: 12,
-                color: "lightblue",
-                line: {
-                    width: 2
+        // Create or update the chart with Chart.js
+        if (window.scatterChart) {
+            window.scatterChart.data.datasets[0].data = dataPoints;
+            window.scatterChart.data.datasets[0].backgroundColor = color;
+            window.scatterChart.data.datasets[0].borderColor = color.replace('0.5', '1');
+            window.scatterChart.update();
+        } else {
+            let ctx = document.getElementById('scatterPlot').getContext('2d');
+            window.scatterChart = new Chart(ctx, {
+                type: "scatter",
+                data: {
+                    datasets: [{
+                        label: 'GDP vs Gini Coefficient',
+                        data: dataPoints,
+                        backgroundColor: color,
+                        borderColor: color.replace('0.5', '1'),
+                        borderWidth: 1,
+                        pointRadius: 5 // Set a fixed size for the scatter plot points
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let data = context.raw;
+                                    return `Country: ${data.label}\nGDP: ${data.x} USD\nGini Index: ${data.y}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'GDP (in Thousands (USD))'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Gini Coefficient'
+                            }
+                        }
+                    }
                 }
-            },
-            hoverinfo: 'text'
-        };
-
-        let layout = {
-            title: `GDP vs Gini Coefficient ${year}`,
-            xaxis: {
-                title: 'GDP (in Thousands (USD))'
-            },
-            yaxis: {
-                title: 'Gini Coefficient'
-            }
-        };
-
-        Plotly.newPlot('plotDiv', [trace], layout);
+            });
+        }
     }
 
     // Initialize plot with the first available year

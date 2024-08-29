@@ -1,40 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Global Wealth Inequality</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="static/css/style.css">
-</head>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .chart-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
 
+        .chart-container > div {
+            flex: 1;
+            margin: 0 10px;
+        }
+
+        .chart-container > div:first-child {
+            margin-left: 0;
+        }
+
+        .chart-container > div:last-child {
+            margin-right: 0;
+        }
+
+        canvas {
+            width: 100% !important; 
+            height: auto !important; 
+        }
+
+        .chart-title {
+            background-color: rgb(33, 123, 192);
+            color: white;
+            padding: 10px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .select-year-card {
+            margin: 10px 0;
+        }
+    </style>
+</head>
 <body>
     <div class="container">
         <div class="row">
             <div class="col-md-12 p-5 text-center bg-light">
                 <h1>Global Income Inequality Dashboard</h1>
-                <p>Use the interactive charts below to explore the dataset</p>
+                <p>Welcome! Explore the dataset using the interactive charts.</p>
             </div>
         </div>
         <br>
         <div class="row">
-            <div class="col-md-12">
+            <div class="col-md-2 select-year-card">
                 <div class="card">
                     <div class="card-body">
-                        <h2>GDP vs. Gini Coefficient</h2>
-                        <select id="yearSelect" class="form-select mb-3">
-                        </select>
-                        <div id="plotDiv" style="height: 500px;"></div>
+                        <h5 class="chart-title">Select Year</h5>
+                        <select id="yearSelect" class="form-select"></select>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <div class="chart-container">
+                    <div>
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="chart-title">Average GDP by Continent</h5>
+                                <canvas id="gdpChart" width="300" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="chart-title">Average Gini Index by Continent</h5>
+                                <canvas id="giniChart" width="300" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <br>
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="chart-title">GDP vs. Gini Coefficient</h5>
+                        <canvas id="scatterPlot"></canvas>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="static/js/logic.js"></script>
+    <script src="static/js/logic2.js"></script>
 </body>
-
 </html>
