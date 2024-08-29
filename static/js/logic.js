@@ -81,7 +81,7 @@ d3.csv("gini_heatmap/wii_data.csv").then(function(data) {
                         backgroundColor: color,
                         borderColor: color.replace('0.5', '1'),
                         borderWidth: 1,
-                        pointRadius: 5 // Set a fixed size for the scatter plot points
+                        pointRadius: 6
                     }]
                 },
                 options: {
