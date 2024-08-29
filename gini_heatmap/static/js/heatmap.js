@@ -1,25 +1,25 @@
 // Set the dimensions and margins of the map
-const width = 900;
-const height = 650;
+const width = 800;  
+const height = 500; 
 
 // Append the SVG object to the body of the page for the map
 const svgMap = d3.select("svg.map-background")
     .attr("width", width)
-    .attr("height", height - 10);
+    .attr("height", height);
 
-// Append the SVG object for the Gini index line chart
-const svgGiniChart = d3.select("#gini-chart")
+// Append the SVG object for the combined line chart
+const svgCombinedLineChart = d3.select("#combined-line-chart")
     .attr("width", 500)
-    .attr("height", 300);
+    .attr("height", 250);
 
-// Append the SVG object for the GDP line chart
-const svgGdpChart = d3.select("#gdp-chart")
-    .attr("width", 500)
-    .attr("height", 300);
+// Append the SVG object for the scatter plot
+const svgScatterPlot = d3.select("#scatter-plot")
+    .attr("width", 500)  // Width remains the same for scatter plot
+    .attr("height", 250);
 
 // Map and projection
 const projection = d3.geoMercator()
-    .scale(130)
+    .scale(100)  // Adjusted scale for smaller map size
     .translate([width / 2, height / 1.7]);
 
 const path = d3.geoPath().projection(projection);
@@ -61,19 +61,6 @@ Promise.all([
     const years = [...new Set(giniData.map(d => d.year))];
     years.sort(); // Sort years in ascending order
 
-    // Create dropdown menu for year selection
-    const yearSelector = d3.select("#yearSelector");
-    yearSelector.selectAll("option")
-        .data(years)
-        .enter()
-        .append("option")
-        .attr("value", d => d)
-        .text(d => d);
-
-    // Initial year selection
-    const initialYear = years[0];
-    yearSelector.property("value", initialYear);
-
     // Function to update the map based on the selected year
     function updateMap(selectedYear) {
         const giniByCountryName = {};
@@ -104,31 +91,242 @@ Promise.all([
             })
             .style("stroke", "#fff")
             .style("stroke-width", 0.8)
-            .on("mouseover", function(event, d) {
+            .on("click", function(event, d) {
                 const gini = giniByCountryName[d.properties.name];
                 const gdp = gdpByCountryName[d.properties.name];
                 const population = populationByCountryName[d.properties.name];
 
                 if (gini !== undefined && gdp !== undefined && population !== undefined) {
+                    // Get the centroid of the clicked country to position the tooltip
+                    const [x, y] = path.centroid(d);
+
                     tooltip.html(`Country: ${d.properties.name}<br>Gini Index: ${gini.toFixed(2)}<br>GDP: ${gdp.toFixed(2)}<br>Population: ${population.toLocaleString()}`)
+                        .style("left", `${x + 0}px`)  // Adjust x-position to be slightly to the right
+                        .style("top", `${y - 0}px`)  // Adjust y-position to be slightly above
                         .style("visibility", "visible");
-                    updateGiniLineChart(d.properties.name);
-                    updateGdpLineChart(d.properties.name);
+
+                    updateCombinedLineChart(d.properties.name); // Update combined line chart
+                    highlightScatterPlotPoint(d.properties.name); // Highlight corresponding scatter plot point
                 }
-                d3.select(this).style("stroke", "black").style("stroke-width", 1);
-            })
-            .on("mousemove", function(event) {
-                tooltip.style("top", (event.pageY - 10) + "px").style("left", (event.pageX + 10) + "px");
-            })
-            .on("mouseout", function() {
-                tooltip.style("visibility", "hidden");
-                d3.select(this).style("stroke", "#fff").style("stroke-width", 0.5);
-                svgGiniChart.selectAll("*").remove();
-                svgGdpChart.selectAll("*").remove();
+                svgMap.selectAll(".country").style("stroke", "#fff").style("stroke-width", 0.5); // Reset stroke for all
+                d3.select(this).style("stroke", "black").style("stroke-width", 1); // Highlight selected country
             });
 
         // Update legend
         updateLegend(colorScale);
+    }
+
+    // Function to update the scatter plot
+    function updateScatterPlot(selectedYear) {
+        const scatterData = giniData.filter(d => d.year === selectedYear);
+        
+        const margin = {top: 10, right: 10, bottom: 40, left: 20};
+        const scatterWidth = +svgScatterPlot.attr("width") - margin.left - margin.right;
+        const scatterHeight = +svgScatterPlot.attr("height") - margin.top - margin.bottom;
+
+        svgScatterPlot.selectAll("*").remove();
+
+        const x = d3.scaleLinear()
+            .domain([0, d3.max(scatterData, d => +d.gdp)]).nice()
+            .range([margin.left, scatterWidth - margin.right]);
+
+        const y = d3.scaleLinear()
+            .domain([0, d3.max(scatterData, d => +d.gini_index)]).nice()
+            .range([scatterHeight - margin.bottom, margin.top]);
+
+        svgScatterPlot.append("g")
+            .attr("transform", `translate(0,${scatterHeight - margin.bottom})`)
+            .call(d3.axisBottom(x).ticks(6))
+            .call(g => g.append("text")
+                .attr("x", scatterWidth - margin.right)
+                .attr("y", margin.bottom - 10)
+                .attr("fill", "black")
+                .attr("class", "axis-label")
+                .text("GDP"));
+
+        svgScatterPlot.append("g")
+            .attr("transform", `translate(${margin.left},0)`)
+            .call(d3.axisLeft(y))
+            .call(g => g.append("text")
+                .attr("x", -margin.left)
+                .attr("y", margin.top - 10)
+                .attr("fill", "none")
+                .attr("text-anchor", "start")
+                .attr("class", "axis-label")
+                .text("Gini Index"));
+        // Create tooltip for scatter plot
+        const scatterTooltip = d3.select("body").append("div")
+            .attr("class", "tooltip")
+            .style("position", "absolute")
+            .style("visibility", "hidden")
+            .style("background", "#fff")
+            .style("padding", "8px")
+            .style("border", "1px solid #ccc")
+            .style("border-radius", "4px")
+            .style("pointer-events", "none")
+            .style("box-shadow", "0px 0px 5px rgba(0,0,0,0.1)");
+
+        svgScatterPlot.selectAll("circle")
+            .data(scatterData)
+            .enter().append("circle")
+            .attr("cx", d => x(+d.gdp))
+            .attr("cy", d => y(+d.gini_index))
+            .attr("r", 5)
+            .attr("fill", "none")
+            .attr("stroke", "steelblue")
+            .attr("stroke-width", 1)
+            .attr("class", d => `dot-${d.country.replace(/\s+/g, '')}`) // Add class for easier selection
+            .on("mouseenter", function(event, d) {
+                scatterTooltip.html(`Country: ${d.country}`)
+                    .style("visibility", "visible")
+                    .style("left", `${event.pageX + 10}px`)
+                    .style("top", `${event.pageY - 10}px`);
+            })
+            .on("mouseleave", function() {
+                scatterTooltip.style("visibility", "hidden");
+            })
+            .on("click", function(event, d) {
+                svgScatterPlot.selectAll("circle").attr("fill", "none").attr("r", 5); // Reset all dots
+                d3.select(this).attr("fill", "orange").attr("r", 7); // Highlight the clicked dot
+                tooltip.html(`Country: ${d.country}<br>Gini Index: ${d.gini_index.toFixed(2)}<br>GDP: ${d.gdp.toFixed(2)}`)
+                    .style("visibility", "visible");
+            });
+    }
+
+    // Function to highlight the corresponding scatter plot point
+    function highlightScatterPlotPoint(countryName) {
+        svgScatterPlot.selectAll("circle")
+            .attr("stroke", "steelblue")
+            .attr("fill", "none")  // Reset all dots
+            .attr("r", 5); // Reset size
+
+        svgScatterPlot.selectAll(`.dot-${countryName.replace(/\s+/g, '')}`)
+            .attr("fill", "red")
+            .attr("r", 10);  // Highlight and enlarge dot
+    }
+
+    // Function to update the combined line chart
+    function updateCombinedLineChart(countryName) {
+        const countryData = giniData.filter(d => d.country === countryName);
+        if (countryData.length === 0) return;
+
+        const margin = {top: 20, right: 10, bottom: 40, left: 20};
+        const lineChartWidth = +svgCombinedLineChart.attr("width") - margin.left - margin.right;
+        const lineChartHeight = +svgCombinedLineChart.attr("height") - margin.top - margin.bottom;
+
+        svgCombinedLineChart.selectAll("*").remove();
+
+        // Create scales for x, y1 (Gini), and y2 (GDP)
+        const x = d3.scaleLinear()
+            .domain(d3.extent(countryData, d => +d.year))
+            .range([margin.left, lineChartWidth - margin.right]);
+
+        const y1 = d3.scaleLinear()
+            .domain([0, d3.max(countryData, d => +d.gini_index)]).nice()
+            .range([lineChartHeight - margin.bottom, margin.top]);
+
+        const y2 = d3.scaleLinear()
+            .domain([0, d3.max(countryData, d => +d.gdp)]).nice()
+            .range([lineChartHeight - margin.bottom, margin.top]);
+
+        // Add x-axis
+        svgCombinedLineChart.append("g")
+            .attr("transform", `translate(0,${lineChartHeight - margin.bottom})`)
+            .call(d3.axisBottom(x).ticks(6).tickFormat(d3.format("d")))
+            .call(g => g.append("text")
+                .attr("x", lineChartWidth - margin.right)
+                .attr("y", margin.bottom - 10)
+                .attr("fill", "black")
+                .attr("class", "axis-label")
+                .text("Year"));
+
+        // Add y1-axis (Gini index)
+        svgCombinedLineChart.append("g")
+            .attr("transform", `translate(${margin.left},0)`)
+            .call(d3.axisLeft(y1))
+            .call(g => g.append("text")
+                .attr("x", -margin.left)
+                .attr("y", margin.top - 10)
+                .attr("fill", "black")
+                .attr("text-anchor", "start")
+                .attr("class", "axis-label")
+                .text("Gini Index"));
+
+        // Add y2-axis (GDP)
+        svgCombinedLineChart.append("g")
+            .attr("transform", `translate(${lineChartWidth - margin.right},0)`)
+            .call(d3.axisRight(y2))
+            .call(g => g.append("text")
+                .attr("x", margin.right - 40)
+                .attr("y", margin.top - 10)
+                .attr("fill", "black")
+                .attr("text-anchor", "end")
+                .attr("class", "axis-label")
+                .text("GDP"));
+
+        // Line for Gini index
+        const lineGini = d3.line()
+            .x(d => x(+d.year))
+            .y(d => y1(+d.gini_index))
+            .curve(d3.curveMonotoneX);
+
+        // Line for GDP
+        const lineGdp = d3.line()
+            .x(d => x(+d.year))
+            .y(d => y2(+d.gdp))
+            .curve(d3.curveMonotoneX);
+
+        // Draw Gini index line
+        svgCombinedLineChart.append("path")
+            .datum(countryData)
+            .attr("fill", "none")
+            .attr("stroke", "#1f77b4") // Color for Gini chart
+            .attr("stroke-width", 2)
+            .attr("d", lineGini);
+
+        // Draw GDP line
+        svgCombinedLineChart.append("path")
+            .datum(countryData)
+            .attr("fill", "none")
+            .attr("stroke", "#ff7f0e")
+            .attr("stroke-width", 2)
+            .attr("d", lineGdp);
+
+        // Title for the combined chart
+        svgCombinedLineChart.append("text")
+            .attr("x", (lineChartWidth + margin.left) / 2)
+            .attr("y", margin.top - 5)
+            .attr("text-anchor", "middle")
+            .style("font-size", "14px")
+            .text(`Gini Index and GDP Over Years for ${countryName}`);
+
+        // Adding a legend to the line chart
+        const legend = svgCombinedLineChart.append("g")
+            .attr("transform", `translate(${lineChartWidth - 120},${lineChartHeight - 80})`); 
+
+        legend.append("circle")
+            .attr("cx", 10)
+            .attr("cy", 10)
+            .attr("r", 6)
+            .style("fill", "#1f77b4");
+        legend.append("text")
+            .attr("x", 20)
+            .attr("y", 10)
+            .text("Gini Index")
+            .style("font-size", "12px")
+            .attr("alignment-baseline", "middle");
+
+        legend.append("circle")
+            .attr("cx", 10)
+            .attr("cy", 25)
+            .attr("r", 6)
+            .style("fill", "#ff7f0e");
+        legend.append("text")
+            .attr("x", 20)
+            .attr("y", 25)
+            .text("GDP")
+            .style("font-size", "12px")
+            .attr("alignment-baseline", "middle");
     }
 
     // Tooltip for displaying Gini index, GDP, and Population
@@ -143,9 +341,9 @@ Promise.all([
         .style("pointer-events", "none")
         .style("box-shadow", "0px 0px 5px rgba(0,0,0,0.1)");
 
-    // Function to update the legend dynamically based on the color scale
+    // Function to update the map legend dynamically based on the color scale
     function updateLegend(colorScale) {
-        svgMap.selectAll(".legend").remove(); // Remove existing legend
+        svgMap.selectAll(".legend").remove();
 
         const legendWidth = 300;
         const legendHeight = 10;
@@ -188,176 +386,17 @@ Promise.all([
             .tickSize(-legendHeight));
     }
 
-    // Function to update Gini index line chart
-    function updateGiniLineChart(countryName) {
-        const countryData = giniData.filter(d => d.country === countryName);
-        if (countryData.length === 0) return;
+    // Initial map and scatter plot rendering
+    updateMap(years[0]);
+    updateScatterPlot(years[0]);
 
-        const margin = {top: 20, right: 30, bottom: 40, left: 50};
-        const lineChartWidth = +svgGiniChart.attr("width") - margin.left - margin.right;
-        const lineChartHeight = +svgGiniChart.attr("height") - margin.top - margin.bottom;
-
-        svgGiniChart.selectAll("*").remove();
-
-        const x = d3.scaleLinear()
-            .domain(d3.extent(countryData, d => +d.year))
-            .range([margin.left, lineChartWidth - margin.right]);
-
-        const y = d3.scaleLinear()
-            .domain([0, d3.max(countryData, d => +d.gini_index)]).nice()
-            .range([lineChartHeight - margin.bottom, margin.top]);
-
-        // Add gridlines
-        svgGiniChart.append("g")
-            .attr("class", "grid")
-            .attr("transform", `translate(0,${lineChartHeight - margin.bottom})`)
-            .call(d3.axisBottom(x).ticks(6).tickSize(-lineChartHeight + margin.top + margin.bottom).tickFormat(''))
-            .selectAll("line")
-            .style("stroke", "lightgrey");
-
-        svgGiniChart.append("g")
-            .attr("class", "grid")
-            .attr("transform", `translate(${margin.left},0)`)
-            .call(d3.axisLeft(y).ticks(5).tickSize(-lineChartWidth + margin.left + margin.right).tickFormat(''))
-            .selectAll("line")
-            .style("stroke", "lightgrey");
-
-        const line = d3.line()
-            .x(d => x(+d.year))
-            .y(d => y(+d.gini_index))
-            .curve(d3.curveMonotoneX); // Smoother line
-
-        const xAxis = g => g
-            .attr("transform", `translate(0,${lineChartHeight - margin.bottom})`)
-            .call(d3.axisBottom(x).ticks(6).tickFormat(d3.format("d")))
-            .call(g => g.append("text")
-                .attr("x", lineChartWidth - margin.right)
-                .attr("y", margin.bottom - 10)
-                .attr("fill", "black")
-                .attr("class", "axis-label")
-                .text("Year"));
-
-        const yAxis = g => g
-            .attr("transform", `translate(${margin.left},0)`)
-            .call(d3.axisLeft(y))
-            .call(g => g.append("text")
-                .attr("x", -margin.left)
-                .attr("y", margin.top - 10)
-                .attr("fill", "black")
-                .attr("text-anchor", "start")
-                .attr("class", "axis-label")
-                .text("Gini Index"));
-
-        svgGiniChart.append("g")
-            .call(xAxis);
-
-        svgGiniChart.append("g")
-            .call(yAxis);
-
-        svgGiniChart.append("path")
-            .datum(countryData)
-            .attr("fill", "none")
-            .attr("stroke", "#1f77b4") // Different color for Gini chart
-            .attr("stroke-width", 2)
-            .attr("d", line);
-
-        svgGiniChart.append("text")
-            .attr("x", (lineChartWidth + margin.left) / 2)
-            .attr("y", margin.top - 5)
-            .attr("text-anchor", "middle")
-            .style("font-size", "16px")
-            .text(`Gini Index Over Years for ${countryName}`);
-    }
-
-    // Function to update GDP line chart
-    function updateGdpLineChart(countryName) {
-        const countryData = giniData.filter(d => d.country === countryName);
-        if (countryData.length === 0) return;
-
-        const margin = {top: 20, right: 30, bottom: 40, left: 50};
-        const lineChartWidth = +svgGdpChart.attr("width") - margin.left - margin.right;
-        const lineChartHeight = +svgGdpChart.attr("height") - margin.top - margin.bottom;
-
-        svgGdpChart.selectAll("*").remove();
-
-        const x = d3.scaleLinear()
-            .domain(d3.extent(countryData, d => +d.year))
-            .range([margin.left, lineChartWidth - margin.right]);
-
-        const y = d3.scaleLinear()
-            .domain([0, d3.max(countryData, d => +d.gdp)]).nice()
-            .range([lineChartHeight - margin.bottom, margin.top]);
-
-        // Add gridlines
-        svgGdpChart.append("g")
-            .attr("class", "grid")
-            .attr("transform", `translate(0,${lineChartHeight - margin.bottom})`)
-            .call(d3.axisBottom(x).ticks(6).tickSize(-lineChartHeight + margin.top + margin.bottom).tickFormat(''))
-            .selectAll("line")
-            .style("stroke", "lightgrey");
-
-        svgGdpChart.append("g")
-            .attr("class", "grid")
-            .attr("transform", `translate(${margin.left},0)`)
-            .call(d3.axisLeft(y).ticks(5).tickSize(-lineChartWidth + margin.left + margin.right).tickFormat(''))
-            .selectAll("line")
-            .style("stroke", "lightgrey");
-
-        const line = d3.line()
-            .x(d => x(+d.year))
-            .y(d => y(+d.gdp))
-            .curve(d3.curveMonotoneX); // Smoother line
-
-        const xAxis = g => g
-            .attr("transform", `translate(0,${lineChartHeight - margin.bottom})`)
-            .call(d3.axisBottom(x).ticks(6).tickFormat(d3.format("d")))
-            .call(g => g.append("text")
-                .attr("x", lineChartWidth - margin.right)
-                .attr("y", margin.bottom - 10)
-                .attr("fill", "black")
-                .attr("class", "axis-label")
-                .text("Year"));
-
-        const yAxis = g => g
-            .attr("transform", `translate(${margin.left},0)`)
-            .call(d3.axisLeft(y))
-            .call(g => g.append("text")
-                .attr("x", -margin.left)
-                .attr("y", margin.top - 5)
-                .attr("fill", "black")
-                .attr("text-anchor", "start")
-                .attr("class", "axis-label")
-                .text("GDP"));
-
-        svgGdpChart.append("g")
-            .call(xAxis);
-
-        svgGdpChart.append("g")
-            .call(yAxis);
-
-        svgGdpChart.append("path")
-            .datum(countryData)
-            .attr("fill", "none")
-            .attr("stroke", "#ff7f0e") // Different color for GDP chart
-            .attr("stroke-width", 2)
-            .attr("d", line);
-
-        svgGdpChart.append("text")
-            .attr("x", (lineChartWidth + margin.left) / 2)
-            .attr("y", margin.top - 5)
-            .attr("text-anchor", "middle")
-            .style("font-size", "16px")
-            .text(`GDP Over Years for ${countryName}`);
-    }
-
-    // Initial map rendering
-    updateMap(initialYear);
-
-    // Update map when the year is changed
-    yearSelector.on("change", function() {
+    // Update map and scatter plot when the year is changed
+    d3.select("#yearSelector").on("change", function() {
         const selectedYear = this.value;
         updateMap(selectedYear);
+        updateScatterPlot(selectedYear);
     });
+
 
 }).catch(error => console.error('Error loading the data files:', error));
 
@@ -369,4 +408,5 @@ function getValueForCountry(countryData) {
 
 document.addEventListener('DOMContentLoaded', function() {
     updateMap(document.getElementById('yearSelector').value);
+    updateScatterPlot(document.getElementById('yearSelector').value);
 });
